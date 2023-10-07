@@ -1,5 +1,6 @@
 import pygame
 import sys
+import mido
 
 # Initialize Pygame
 pygame.init()
@@ -22,12 +23,35 @@ pygame.display.set_caption("88-Key Piano")
 # Create a list to store key colors (white and black keys)
 key_colors = [WHITE, BLACK] * 44  # Alternating white and black keys for 88 keys
 
+# Create a dictionary to map MIDI notes to corresponding keys
+note_to_key = {
+    21: 0, 22: 1, 23: 2, 24: 3, 25: 4, 26: 5, 27: 6,
+    # Add more mappings for all 88 keys...
+}
+
+# Initialize the MIDI input port using MIDO
+midi_input = mido.open_input("Your_MIDI_Input_Device_Name")
+
 # Game loop
 running = True
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+
+    # Check for incoming MIDI messages
+    for message in midi_input.iter_pending():
+        if message.type == 'note_on':
+            note = message.note
+            if note in note_to_key:
+                key_index = note_to_key[note]
+                key_colors[key_index] = GRAY
+
+        elif message.type == 'note_off':
+            note = message.note
+            if note in note_to_key:
+                key_index = note_to_key[note]
+                key_colors[key_index] = WHITE
 
     # Clear the screen
     screen.fill(WHITE)
@@ -53,6 +77,8 @@ while running:
     # Update the display
     pygame.display.flip()
 
-# Quit Pygame
+# Quit Pygame and MIDO
 pygame.quit()
+mido.get_input_names().remove(midi_input.name)
+midi_input.close()
 sys.exit()
